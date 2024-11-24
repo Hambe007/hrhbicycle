@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Bicycle System</title>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* Base Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f6fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background-color: #1a237e;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #1a237e;
+        }
+
+        .nav-tab.active {
+            background-color: #1a237e;
+            color: white;
+        }
+
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            margin-top: 0;
+            color: #1a237e;
+            font-size: 18px;
+            border-bottom: 2px solid #1a237e;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a237e;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #1a237e;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #1a237e;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #1a237e;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #90a4ae;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 4px;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+        }
+
+        .notification.success {
+            background-color: #4caf50;
+        }
+
+        .notification.error {
+            background-color: #f44336;
+        }
+
+        /* Recent Activity */
+        .activity-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .activity-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background-color: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .status-maintenance {
+            background-color: #ffebee;
+            color: #f44336;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Hotel Bicycle System</h1>
+            <div id="currentTime"></div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="nav-tab" onclick="showTab('issuing')">Bicycle Issuing</button>
+            <button class="nav-tab" onclick="showTab('arrangement')">Bicycle Arrangement</button>
+            <button class="nav-tab" onclick="showTab('maintenance')">Maintenance</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboardTab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalBikes">0</div>
+                    <div class="stat-label">Total Bicycles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="availableBikes">0</div>
+                    <div class="stat-label">Available</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="inUseBikes">0</div>
+                    <div class="stat-label">In Use</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="maintenanceBikes">0</div>
+                    <div class="stat-label">Under Maintenance</div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3 class="card-title">Recent Activity</h3>
+                    <ul class="activity-list" id="recentActivity">
+                        <!-- Activities will be populated here -->
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Quick Actions</h3>
+                    <div class="quick-actions">
+                        <button class="btn btn-primary" onclick="showTab('issuing')">Issue Bicycle</button>
+                        <button class="btn btn-success" onclick="showTab('arrangement')">View Arrangement</button>
+                        <button class="btn btn-warning" onclick="showTab('maintenance')">Report Issue</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issuing Tab -->
+        <div id="issuingTab" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">Issue New Bicycle</h3>
+                <form id="issueForm">
+                    <div class="grid">
+                        <div class="form-group">
+                            <label>Room Number</label>
+                            <input type="text" class="form-control" id="roomNumber" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Guest Name</label>
+                            <input type="text" class="form-control" id="guestName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bicycle Number</label>
+                            <select class="form-control" id="bicycleNumber" required>
+                                <!-- Will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Lock Code</label>
+                            <input type="text" class="form-control" id="lockCode" required 
+                                   pattern="[0-9]{4}" title="Please enter 4 digits">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Issue Bicycle</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">Active Rentals</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Room</th>
+                                <th>Guest</th>
+                                <th>Bicycle</th>
+                                <th>Lock Code</th>
+                                <th>Issue Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activeRentalsTable">
+                            <!-- Will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="notification" class="notification"></div>
+    </div>
+
+<script>
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyBjAGc8L0bkO_2RbWi0-rw7__lSHCoBrJQ",
+    authDomain: "bicycle-issuing-system2.firebaseapp.com",
+    projectId: "bicycle-issuing-system2",
+    storageBucket: "bicycle-issuing-system2.firebasestorage.app",
+    messagingSenderId: "64926990610",
+    appId: "1:64926990610:web:f45390888ea1d0dfb5f3cb"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Global Variables
+let bicycles = {
+    regular: [],    // 1000-1500
+    kids: [],       // K01-K100
+    libero: []      // Libero 01-40
+};
+let activeRentals = [];
+let recentActivity = [];
+
+// Initialize System
+function initializeSystem() {
+    // Initialize bicycle inventory
+    initializeBicycles();
+    // Load active rentals
+    loadActiveRentals();
+    // Update dashboard
+    updateDashboard();
+    // Start clock
+    updateClock();
+    setInterval(updateClock, 1000);
+}
+
+// Initialize bicycle inventory
+function initializeBicycles() {
+    // Regular bicycles
+    for (let i = 1000; i <= 1500; i++) {
+        bicycles.regular.push({
+            number: i.toString(),
+            type: 'Regular',
+            status: 'Available'
+        });
+    }
+
+    // Kids bicycles
+    for (let i = 1; i <= 100; i++) {
+        bicycles.kids.push({
+            number: `K${i.toString().padStart(2, '0')}`,
+            type: 'Kids',
+            status: 'Available'
+        });
+    }
+
+    // Libero bicycles
+    for (let i = 1; i <= 40; i++) {
+        bicycles.libero.push({
+            number: `Libero ${i.toString().padStart(2, '0')}`,
+            type: 'Libero',
+            status: 'Available'
+        });
+    }
+
+    updateBicycleSelect();
+}
+
+// Update bicycle select dropdown
+function updateBicycleSelect() {
+    const select = document.getElementById('bicycleNumber');
+    select.innerHTML = '<option value="">Select Bicycle</option>';
+
+    // Add available bicycles to select
+    Object.keys(bicycles).forEach(type => {
+        const availableBikes = bicycles[type].filter(b => b.status === 'Available');
+        if (availableBikes.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = type.charAt(0).toUpperCase() + type.slice(1);
+            
+            availableBikes.forEach(bike => {
+                const option = document.createElement('option');
+                option.value = bike.number;
+                option.textContent = bike.number;
+                optgroup.appendChild(option);
+            });
+            
+            select
+          // Continuing from previous code...
+
+// Update bicycle select dropdown (continued)
+function updateBicycleSelect() {
+    const select = document.getElementById('bicycleNumber');
+    select.innerHTML = '<option value="">Select Bicycle</option>';
+
+    // Add available bicycles to select
+    Object.keys(bicycles).forEach(type => {
+        const availableBikes = bicycles[type].filter(b => b.status === 'Available');
+        if (availableBikes.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = type.charAt(0).toUpperCase() + type.slice(1);
+            
+            availableBikes.forEach(bike => {
+                const option = document.createElement('option');
+                option.value = bike.number;
+                option.textContent = bike.number;
+                optgroup.appendChild(option);
+            });
+            
+            select.appendChild(optgroup);
+        }
+    });
+}
+
+// Load active rentals from Firebase
+function loadActiveRentals() {
+    db.collection('rentals')
+        .where('status', '==', 'Active')
+        .orderBy('issueDate', 'desc')
+        .onSnapshot((snapshot) => {
+            activeRentals = [];
+            snapshot.forEach((doc) => {
+                activeRentals.push({ id: doc.id, ...doc.data() });
+            });
+            displayActiveRentals();
+            updateDashboard();
+            addToRecentActivity('Rentals updated');
+        });
+}
+
+// Display active rentals in table
+function displayActiveRentals() {
+    const tbody = document.getElementById('activeRentalsTable');
+    tbody.innerHTML = '';
+
+    activeRentals.forEach(rental => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${rental.roomNumber}</td>
+            <td>${rental.guestName}</td>
+            <td>${rental.bicycleNumber}</td>
+            <td>${rental.lockCode}</td>
+            <td>${formatDate(rental.issueDate)}</td>
+            <td>
+                <button class="btn btn-success" onclick="returnBicycle('${rental.id}')">Return</button>
+                <button class="btn btn-danger" onclick="cancelRental('${rental.id}')">Cancel</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Update dashboard statistics
+function updateDashboard() {
+    // Calculate statistics
+    const totalBikes = Object.values(bicycles).flat().length;
+    const inUse = activeRentals.length;
+    const maintenance = Object.values(bicycles)
+        .flat()
+        .filter(b => b.status === 'Maintenance').length;
+    const available = totalBikes - inUse - maintenance;
+
+    // Update display
+    document.getElementById('totalBikes').textContent = totalBikes;
+    document.getElementById('availableBikes').textContent = available;
+    document.getElementById('inUseBikes').textContent = inUse;
+    document.getElementById('maintenanceBikes').textContent = maintenance;
+}
+
+// Handle bicycle issuing
+document.getElementById('issueForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+        roomNumber: document.getElementById('roomNumber').value,
+        guestName: document.getElementById('guestName').value,
+        bicycleNumber: document.getElementById('bicycleNumber').value,
+        lockCode: document.getElementById('lockCode').value,
+        issueDate: new Date().toISOString(),
+        status: 'Active'
+    };
+
+    try {
+        // Add rental to Firebase
+        await db.collection('rentals').add(formData);
+        
+        // Update bicycle status
+        updateBicycleStatus(formData.bicycleNumber, 'In Use');
+        
+        // Show success notification
+        showNotification('Bicycle issued successfully', 'success');
+        
+        // Reset form
+        e.target.reset();
+        
+        // Add to recent activity
+        addToRecentActivity(`Bicycle ${formData.bicycleNumber} issued to Room ${formData.roomNumber}`);
+        
+    } catch (error) {
+        console.error('Error issuing bicycle:', error);
+        showNotification('Error issuing bicycle', 'error');
+    }
+});
+
+// Return bicycle
+async function returnBicycle(rentalId) {
+    if (!confirm('Are you sure you want to return this bicycle?')) return;
+
+    try {
+        const rental = activeRentals.find(r => r.id === rentalId);
+        
+        // Update rental status in Firebase
+        await db.collection('rentals').doc(rentalId).update({
+            status: 'Returned',
+            returnDate: new Date().toISOString()
+        });
+
+        // Update bicycle status
+        updateBicycleStatus(rental.bicycleNumber, 'Available');
+        
+        showNotification('Bicycle returned successfully', 'success');
+        addToRecentActivity(`Bicycle ${rental.bicycleNumber} returned from Room ${rental.roomNumber}`);
+        
+    } catch (error) {
+        console.error('Error returning bicycle:', error);
+        showNotification('Error returning bicycle', 'error');
+    }
+}
+
+// Cancel rental
+async function cancelRental(rentalId) {
+    if (!confirm('Are you sure you want to cancel this rental?')) return;
+
+    try {
+        const rental = activeRentals.find(r => r.id === rentalId);
+        
+        // Update rental status in Firebase
+        await db.collection('rentals').doc(rentalId).update({
+            status: 'Cancelled',
+            cancelDate: new Date().toISOString()
+        });
+
+        // Update bicycle status
+        updateBicycleStatus(rental.bicycleNumber, 'Available');
+        
+        showNotification('Rental cancelled successfully', 'success');
+        addToRecentActivity(`Rental cancelled for Bicycle ${rental.bicycleNumber}`);
+        
+    } catch (error) {
+        console.error('Error cancelling rental:', error);
+        showNotification('Error cancelling rental', 'error');
+    }
+}
+
+// Update bicycle status
+function updateBicycleStatus(bicycleNumber, status) {
+    let found = false;
+    Object.keys(bicycles).forEach(type => {
+        const bike = bicycles[type].find(b => b.number === bicycleNumber);
+        if (bike) {
+            bike.status = status;
+            found = true;
+        }
+    });
+
+    if (found) {
+        updateBicycleSelect();
+        updateDashboard();
+    }
+}
+
+// Recent activity management
+function addToRecentActivity(message) {
+    const activity = {
+        message,
+        timestamp: new Date().toISOString()
+    };
+
+    recentActivity.unshift(activity);
+    if (recentActivity.length > 10) recentActivity.pop();
+    
+    displayRecentActivity();
+}
+
+// Display recent activity
+function displayRecentActivity() {
+    const activityList = document.getElementById('recentActivity');
+    activityList.innerHTML = '';
+
+    recentActivity.forEach(activity => {
+        const li = document.createElement('li');
+        li.className = 'activity-item';
+        li.innerHTML = `
+            <div>${activity.message}</div>
+            <small>${formatDate(activity.timestamp)}</small>
+        `;
+        activityList.appendChild(li);
+    });
+}
+
+// Tab management
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    
+    // Remove active class from all nav buttons
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + 'Tab').style.display = 'block';
+    
+    // Add active class to selected nav button
+    document.querySelector(`.nav-tab[onclick="showTab('${tabName}')"]`).classList.add('active');
+}
+
+// Notification system
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.style.display = 'block';
+
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+// Update clock
+function updateClock() {
+    const now = new Date();
+    document.getElementById('currentTime').textContent = now.toLocaleString();
+}
+
+// Date formatter
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleString();
+}
+
+// Initialize the system when the page loads
+document.addEventListener('DOMContentLoaded', initializeSystem);
+</script>
+
+// Add this closing tag to the HTML
+</body>
+</html>
