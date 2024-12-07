@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Hotel Bicycle Management System</title>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f6fa;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .form-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Enhanced Hotel Bicycle Management System</h1>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        <div class="form-section">
+            <h2>Issue Bicycle</h2>
+            <form id="issue-form">
+                <label for="roomNumber">Room Number:</label>
+                <input type="text" id="roomNumber" required>
+
+                <label for="guestName">Guest Name:</label>
+                <input type="text" id="guestName" required>
+
+                <label for="issueDate">Issue Date:</label>
+                <input type="date" id="issueDate" required>
+
+                <label for="departureDate">Departure Date:</label>
+                <input type="date" id="departureDate" required>
+
+                <label for="bicycleNumber">Bicycle Number:</label>
+                <select id="bicycleNumber" required>
+                    <option value="">Select Bicycle</option>
+                </select>
+
+                <button type="submit">Save Record</button>
+            </form>
+        </div>
+
+        <div class="form-section">
+            <h2>Available Records</h2>
+            <table id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>Room Number</th>
+                        <th>Guest Name</th>
+                        <th>Issue Date</th>
+                        <th>Departure Date</th>
+                        <th>Bicycle Number</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Firebase Configuration and Initialization -->
+    <script>
+         const firebaseConfig = {
+        apiKey: "AIzaSyBjAGc8L0bkO_2RbWi0-rw7__lSHCoBrJQ",
+        authDomain: "bicycle-issuing-system2.firebaseapp.com",
+        projectId: "bicycle-issuing-system2",
+        storageBucket: "bicycle-issuing-system2.firebasestorage.app",
+        messagingSenderId: "64926990610",
+        appId: "1:64926990610:web:f45390888ea1d0dfb5f3cb"
+    };
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('issue-form');
+            const recordsTable = document.getElementById('recordsTable').getElementsByTagName('tbody')[0];
+
+            // Populate available bicycles
+            db.collection('bicycleInventory').where('status', '==', 'Available').get()
+                .then(snapshot => {
+                    const dropdown = document.getElementById('bicycleNumber');
+                    snapshot.forEach(doc => {
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = doc.data().bicycleNumber;
+                        dropdown.appendChild(option);
+                    });
+                })
+                .catch(error => console.error("Error fetching bicycles:", error));
+
+            // Handle form submission
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const record = {
+                    roomNumber: document.getElementById('roomNumber').value,
+                    guestName: document.getElementById('guestName').value,
+                    issueDate: document.getElementById('issueDate').value,
+                    departureDate: document.getElementById('departureDate').value,
+                    bicycleNumber: document.getElementById('bicycleNumber').value,
+                    status: 'Active',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                db.collection('bicycleRecords').add(record)
+                    .then(() => {
+                        console.log("Record added successfully");
+                        form.reset();
+                        fetchRecords();
+                    })
+                    .catch(error => console.error("Error adding record:", error));
+            });
+
+            // Fetch and display records
+            function fetchRecords() {
+                recordsTable.innerHTML = '';
+                db.collection('bicycleRecords').orderBy('timestamp', 'desc').get()
+                    .then(snapshot => {
+                        snapshot.forEach(doc => {
+                            const record = doc.data();
+                            const row = recordsTable.insertRow();
+                            row.innerHTML = `
+                                <td>${record.roomNumber}</td>
+                                <td>${record.guestName}</td>
+                                <td>${record.issueDate}</td>
+                                <td>${record.departureDate}</td>
+                                <td>${record.bicycleNumber}</td>
+                                <td>${record.status}</td>
+                            `;
+                        });
+                    })
+                    .catch(error => console.error("Error fetching records:", error));
+            }
+
+            // Initial fetch
+            fetchRecords();
+        });
+    </script>
+</body>
+</html>
